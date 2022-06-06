@@ -1,0 +1,100 @@
+group 'com.github.tix-measurements'
+version '0.1.3-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'jacoco'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+	snakeyamlVersion = "1.17"
+	jMicroConfigsVersion = "1.0.0"
+	tixTimeCoreVersion = "2.2.3"
+    amqpClientVersion = "3.6.2"
+    nettyVersion = "4.0.36.Final"
+    jacksonVersion = "2.8.3"
+    commonsBeanUtilsVersion = "1.9.2"
+    commonsConfigVersion = "2.1"
+    commonsLangVersion = "3.4"
+    guavaVersion = "19.0"
+    assertjVersion = "3.4.1"
+    log4jVersion = "2.5"
+    junitVersion = "4.12"
+    mockitoVersion = "1.9.5"
+	apacheHttpComponentsVersion = "4.5.2"
+}
+
+dependencies {
+	// Core
+	compile group: 'com.github.fnmartinez', name: 'j-micro-configs', version: "${jMicroConfigsVersion}"
+    compile group: 'com.github.tix-measurements', name: 'tix-time-core', version: "${tixTimeCoreVersion}"
+    compile group: 'com.rabbitmq', name: 'amqp-client', version: "${amqpClientVersion}"
+    compile group: 'io.netty', name: 'netty-all', version: "${nettyVersion}"
+    // Libs & Misc.
+	compile group: 'org.yaml', name: 'snakeyaml', version: "${snakeyamlVersion}"
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: "${jacksonVersion}"
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonVersion}"
+	compile group: 'commons-beanutils', name: 'commons-beanutils', version: "${commonsBeanUtilsVersion}"
+	compile group: 'org.apache.commons', name: 'commons-configuration2', version: "${commonsConfigVersion}"
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: "${commonsLangVersion}"
+	compile group: 'com.google.guava', name: 'guava', version: "${guavaVersion}"
+	compile group: 'org.assertj', name: 'assertj-core', version: "${assertjVersion}"
+    // Logging
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${log4jVersion}"
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${log4jVersion}"
+    // Testing
+    testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
+    testCompile group: 'org.mockito', name: 'mockito-all', version: "${mockitoVersion}"
+	testCompile group: 'org.apache.httpcomponents', name: 'httpclient', version: "${apacheHttpComponentsVersion}"
+}
+
+jacoco {
+    toolVersion = "0.7.6.201602180812"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        xml.destination "${buildDir}/test-results/coverage.xml"
+        csv.enabled false
+        html.destination "${buildDir}/reports/coverage"
+    }
+	afterEvaluate {
+		classDirectories = files(classDirectories.files.collect {
+			fileTree(dir: it,
+					exclude: ['com/github/tix_measurements/time/server/config/**'])
+		})
+	}
+}
+
+test {
+    jacoco {
+        append = false
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    }
+}
+
+task fatJar(type: Jar) {
+	manifest {
+		attributes 'Implementation-Title': 'TixTimeServer',
+				'Implementation-Version': version,
+				'Main-Class': 'com.github.tix_measurements.time.server.TixTimeServer'
+	}
+	baseName = project.name + '-all'
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}

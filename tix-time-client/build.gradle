@@ -1,0 +1,95 @@
+group 'com.github.tix_measurements'
+version '0.1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'jacoco'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+}
+
+ext {
+    nettyVersion = "4.0.36.Final"
+    tixTimeCoreVersion = "2.2.3"
+    commonsLangVersion = "3.4"
+    guavaVersion = "19.0"
+    assertjVersion = "3.4.1"
+    httpComponentsVersion = "4.5.3"
+    orgJsonVersion = "20170516"
+    log4jVersion = "2.5"
+    junitVersion = "4.12"
+    mockitoVersion = "1.9.5"
+    jacksonVersion = "2.7.3"
+}
+
+dependencies {
+    // Core
+    compile group: 'io.netty', name: 'netty-all', version: "${nettyVersion}"
+    compile group: 'com.github.tix-measurements', name: 'tix-time-core', version: "${tixTimeCoreVersion}"
+    // Libs & Misc.
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: "${commonsLangVersion}"
+    compile group: 'com.google.guava', name: 'guava', version: "${guavaVersion}"
+    compile group: 'org.assertj', name: 'assertj-core', version: "${assertjVersion}"
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: "${httpComponentsVersion}"
+    compile group: 'org.json', name: 'json', version: "${orgJsonVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: "${jacksonVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "${jacksonVersion}"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonVersion}"
+
+    // Logging
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${log4jVersion}"
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${log4jVersion}"
+    // Testing
+    testCompile group: 'junit', name: 'junit', version: "${junitVersion}"
+    testCompile group: 'org.mockito', name: 'mockito-all', version: "${mockitoVersion}"
+}
+
+jacoco {
+    toolVersion = "0.7.6.201602180812"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        xml.destination "${buildDir}/test-results/coverage.xml"
+        csv.enabled false
+        html.destination "${buildDir}/reports/coverage"
+    }
+}
+
+test {
+    jacoco {
+        append = false
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    }
+}
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    }
+    dependencies {
+        classpath 'no.tornado:fxlauncher-gradle-plugin:1.0.17'
+    }
+}
+
+
+apply plugin: 'no.tornado.fxlauncher'
+
+fxlauncher {
+    applicationVendor 'TiX'
+    applicationUrl 'https://tix.innova-red.net/downloads/assets/'
+    applicationMainClass 'com.github.tix_measurements.time.client.Main'
+    deployTarget 'jperezcu@tix.innova-red.net:/var/www/downloads/assets'
+    cacheDir 'USERLIB/tix-time-client'
+}

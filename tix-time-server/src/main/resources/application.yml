@@ -1,0 +1,22 @@
+environment: default
+queue:
+  user: guest
+  password: guest
+  name: server-condenser-test
+  host: localhost
+worker-threads-quantity: 16
+udp-port: 4500
+http-port: 8080
+log-level: ALL
+---
+environment: test
+---
+environment: stage
+queue:
+  name: server-condenser-staging
+log-level: INFO
+---
+environment: prod
+queue:
+  name: server-condenser-prod
+log-level: INFO

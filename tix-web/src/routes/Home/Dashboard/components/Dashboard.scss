@@ -1,0 +1,32 @@
+.control-group {
+  display: flex;
+  align-items: baseline;
+}
+
+.form-alignment {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.control-label {
+  margin-right: 10px;
+}
+
+.jumbotron-display {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 1;
+  height: 53px;
+  margin: 0px;
+  padding: 0px;
+}
+
+.card-margins {
+  margin: 20px 0px
+}
+
+.plot-height {
+  height: 200px
+}

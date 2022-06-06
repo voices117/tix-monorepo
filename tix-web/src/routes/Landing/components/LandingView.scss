@@ -1,0 +1,59 @@
+.head {
+  margin-left: 20px;width: 245px;
+}
+
+.caption {
+  float: left;
+  width: 270px;
+}
+
+.span8 {
+  width: 350px;
+}
+
+.thumb_image {
+  width: 187px;
+  height: 187px;
+  float: left;
+}
+
+.clear {
+  clear: both;
+}
+
+.margin-fix {
+  margin-top: 15px;
+}
+
+.hgroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgb(245,245,245);
+}
+
+.button-size{
+  margin-top: 10px;
+  width: 150px;
+}
+
+.password-forgot-text{
+  box-sizing: border-box;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.log-in-header{
+  text-align: center;
+  padding: 25px;
+  margin: 0;
+  color: white;
+  background-color: #0d47a1;
+}
+
+.line-margin{
+  margin-bottom: 30px;
+}

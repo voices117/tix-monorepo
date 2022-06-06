@@ -1,0 +1,35 @@
+language: java
+jdk:
+  - oraclejdk8
+
+sudo: required
+services:
+  - docker
+  - rabbitmq
+
+script:
+  - ./gradlew test jacocoTestReport
+  #TODO: add tests from docker
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+  - ./gradlew fatJar
+  - cp build/libs/tix-time-server-all-*.jar tix-time-server.jar
+  - docker login -u $DOCKER_USER -p $DOCKER_PASS
+  - export REPO=tixmeasurements/tix-time-server
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+  - docker build -f Dockerfile -t $REPO:$COMMIT .
+  - docker tag $REPO:$COMMIT $REPO:$TAG
+  - docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+  - docker push $REPO
+
+env:
+  global:
+  # DOCKER_EMAIL
+    - secure: "XhzlY/QQRjbDf1R/gzL4BKbwDSGwYrxu1vyI1pUALah7cbe1ja9bjl071ZukC2otEGlJgZtrFS4vYpbtIjhhBPl0CAHJFf0uLAmcaqYhm5+x1I4BpSt838ZHJC3ULT8fOZv1HddADaE9dyjZn4iUF+g2YK3gRyO5jntFvbt/LL/94t0NcQzhZejQ7OAb+dYUgpNWDA+f4qbuP8H4Q46e/s7Pw55IInwtu/Wqi7ZOFzNjUqyIpgzLd7Ns2XBT2NBXjed3po+zg9t8EJvAZUN8+mgcIjhP9uqWI37D+SKA/wGLo2ax6Pnp9yx34ozIR05aT1NaLCIaDAUBTFKEY3eBhl2yRN80bb1dCLk3emklNcqYMrlfBcV7MV8zaSJMbjCEs1dKNm1sI9kKf/d3vKf+x17mi7Q3faOc9z81Sv7q6fAEA/b+M5WVGYIek6I7C2DYao3fmWLQPhF3RXft+8un6TOM4DbvBkGYYj7rQngeLLC6+CO3OqVtf3KDpPsuO+75+1JUfmJImQmzlbwmzVL9fHKd6X4Paf613sohdubPMkeHF2H2KF0m/sR6pegpAqrk8eYLHOtVzb84gjFBuK/SWrVyeIZ+DyB0ry3kOqhvu4hQVm5sTSzUihCit6s/UpnLHKpKhA1Tjb1Y3eaR4jTVc78BPbAOokLxxf1HhAMK84k="
+  # DOCKER_USER
+    - secure: "fM3hy66cEn/S3W4RRNxUJXJxpUUcu1ECq0qtmJLGyBDhDJ7bXGV44pS8gVhhNw2USQheBBfCW9BuM7wtqRF3LaRi0aF1EXRNtXYNXwl84wD3/Z0CQgeTg3PqIjU1lSrDWC30SlsNgNZ8M334XjJcXyzNClEoJq5r9TV8gVRjP/dspZvepYrrNhBeqwiv/NWqc1tFKNxLUaSGGCuZN3pOsiWVOdty/jyOd38S3tyAgb2nSmuNoOwPYYi5R4YkwWrvh8JhC+pmXAeeTcb3MQh6zPvoYYaZyUIpWpsvStnLbnJiH2mWOHXd3UmhHIOe/oD5OSa2BHI5EWc7zJmwqSjtka4NIDTVwcpgYJWugvMOCLnxSxap8B2+LrlVycbyqXpPW7mXnJ/Z3bu3EcIRdrND8KdDR5YbpYH9HS4tTf72OZDe4HoPdXM0a1SNznuR3j2Egh7F/9+MULXWfgRmvIBSCRsQuqw/NNWCR4kVSqlazSpB/pNhrLAIiUDSpFwTVzSs2f/3m6eOdMCg6pB8H+G6SHL7YkhLYvXUr0QQlbBcpzM9Ubfw6H3ajBf3VKlF16c9Ly/LzsmZN402GpMsXETlaQrL6js91qqCAV291aH9LgklW1TScxrzHKiZcUKBuPnjTe5pYtSCw3drAjd7gzE9q1xujh6Q7lbucTn+X5Gn1UA="
+  # DOCKER_PASS
+    - secure: "aspuGgeAVLF+EjRuvs2s1IPdsjl+2zr+U6bqRPrrveq4fD5zfJ1pXbuQmecTOgNT0hELEFVdt+KHyPwPM5sPWVjCD0utiPF5oNYPeW1M/ly1ijxYoOqxA0qxbHDVGcTTKqPgVhbqFSatO5egSDk1ZzppPFu41JQDsSPiBC5LzircX8lawxLwNaINzmqgeEVD0MwFvWf7ryJp2QicWE2K4LqZrb/FuSpsggVTsCztHpG1BvxqgK5Tfwamz5WGtf4nwDVSQnzfH3wBxojR8Mv9yLaeRCTvzaPtkdUR++ePXV1M+xHH72zKHm7YOwx1kLK2na8WdEoJbprCyxz/nUJxRI7HkVeomdXRP8E6lW6y9PXHICNRoC40QWgL2jW+Uu94m9QHOZ2KkhpHCM1ruaQQl4cVT5SzbHIsZm3cTViDU3QKP5wHmPj/LpXeODxjMIN7NTfitDVegb1293XlIv40p0MjVSCCHK8rhkkGVn2EPFJLOvpi7aNaAQyvhIOX7DXY2QrW0mFEJvQD1PrK+Aw8EfGS7XIQN5gJPIGM9HFggdGnoi6Zav8A9HwMDGmfJr/Zwb1ltCgLENqgFynveJhUD70+Dhfm/VXkdtsckHjJLdK7jwOhGVkf85iO1r9aa5T1/7U8qlY8nVg69CITvMaraE8P9Ew1YL8H1pjZom59hpc="
+    - COMMIT=${TRAVIS_COMMIT::8}
+

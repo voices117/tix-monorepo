@@ -1,0 +1,7 @@
+.password-recovery-text{
+  box-sizing: border-box;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
