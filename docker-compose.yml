@@ -1,0 +1,86 @@
+version: "3.7"
+
+x-common-variables: &common-variables
+  RABBITMQ_DEFAULT_USER: guest
+  RABBITMQ_DEFAULT_PASS: guest
+  TIX_API_HOST: tix-api
+  TIX_API_USER: guest
+  TIX_API_PASSWORD: guest
+
+volumes:
+  ReportsVolume:
+  SchedulerVolume:
+  iptoas-datadir:
+  mysql-datadir:
+  sql-dump:
+
+services:
+  tix-time-server:
+    image: tixmeasurements/tix-time-server:latest
+    environment:
+      <<: *common-variables
+      TIX__QUEUE__HOST: rabbitmq
+    depends_on:
+      - rabbitmq
+
+  tix-time-processor:
+    # TODO: validate the "-worker" suffix (https://github.com/TiX-measurements/tix-time-processor)
+    image: tixmeasurements/tix-time-processor:latest
+    environment:
+      <<: *common-variables
+      TIX_REPORTS_BASE_PATH: /reports
+      TIX_RABBITMQ_USER: guest
+      TIX_RABBITMQ_PASS: guest
+      TIX_RABBITMQ_HOST: rabbitmq
+      PROCESSOR_TYPE: STANDALONE
+    volumes:
+      - ReportsVolume:/reports
+      - SchedulerVolume:/tmp/celerybeat-schedule.d  # default location can be changed using CELERY_BEAT_SCHEDULE_DIR
+    depends_on:
+      - rabbitmq
+
+  # tix-api:
+  #   image: tixmeasurements/tix-api:latest
+  #   command: ["npm", "run", "start"]
+  #   ports:
+  #     - "3001:3001/tcp"
+  #   depends_on:
+  #     - mysql
+
+  tix-api:
+    build:
+      context: tix-api
+    ports:
+      - "3001:3001/tcp"
+    depends_on:
+      - mysql
+
+  tix-iptoas:
+    image: tixmeasurements/iptoas:latest
+    depends_on:
+      - mysql
+    volumes:
+      - iptoas-datadir:/root/iptoas
+
+  tix-web:
+    build:
+      context: tix-web
+    ports:
+      - 3000:3000
+  
+  rabbitmq:
+    image: rabbitmq:3
+    environment:
+      <<: *common-variables
+
+  mysql:
+    image: mysql:5.7.28
+    environment:
+      MYSQL_ROOT_PASSWORD: tix
+      MYSQL_DATABASE: tix
+      MYSQL_USER: tix
+      MYSQL_PASSWORD: tix
+    # volumes:
+    #   - mysql-datadir:/var/lib/mysql
+    #   - sql-dump:/docker-entrypoint-initdb.d
+
