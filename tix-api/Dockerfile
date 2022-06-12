@@ -1,5 +1,9 @@
 FROM node:boron
 
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && apt install -y python-pip && rm -rf /var/lib/apt/lists/*
+RUN pip install MySQL-python
+
 # Create app directory
 WORKDIR /usr/src/app
 
