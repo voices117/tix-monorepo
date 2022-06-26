@@ -20,6 +20,9 @@ services:
     environment:
       <<: *common-variables
       TIX__QUEUE__HOST: rabbitmq
+    ports:
+      - "4500:4500/udp"
+      - "8080:8080/tcp"
     depends_on:
       - rabbitmq
 
