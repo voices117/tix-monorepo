@@ -26,6 +26,14 @@ services:
     depends_on:
       - rabbitmq
 
+  tix-client-trigger:
+    build:
+      context: tix-client-trigger
+    environment:
+      PORT: 7561
+    ports:
+      - "7561:7561/udp"
+
   tix-time-processor:
     # TODO: validate the "-worker" suffix (https://github.com/TiX-measurements/tix-time-processor)
     image: tixmeasurements/tix-time-processor:latest
@@ -42,15 +50,9 @@ services:
     depends_on:
       - rabbitmq
 
-  # tix-api:
-  #   image: tixmeasurements/tix-api:latest
-  #   command: ["npm", "run", "start"]
-  #   ports:
-  #     - "3001:3001/tcp"
-  #   depends_on:
-  #     - mysql
-
   tix-api:
+    # image: tixmeasurements/tix-api:latest
+    # command: ["npm", "run", "start"]
     build:
       context: tix-api
     ports:
