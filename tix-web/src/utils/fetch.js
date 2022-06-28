@@ -1,27 +1,34 @@
 import 'whatwg-fetch';
 
-const TIX_API_URL = "http://localhost:3001";
+function getApiURL() {
+    if (location.hostname == 'localhost' || location.hostname == '127.0.0.1') {
+        // assume we are running in a local environment and
+        // just call the local service
+        return "http://localhost:3001"
+    } else {
+        // assume production and call the real service
+        return "https://tix.innova-red.net"
+    }
+}
 
 function getAuthentication(token) {
-    if (token) {
-        return { Authorization: `JWT ${token}` };
-    }
-    return {};
+  if (token) {
+    return { Authorization: `JWT ${token}` };
+  }
+  return {};
 }
 
 export default function isoFetch(url, options = {}) {
-    const method = options.method || 'GET';
-    const body = JSON.stringify(options.body) || undefined;
-    console.log(process.env.TIX_API_URL)
-    console.log(TIX_API_URL)
-    const fullUrl = `${TIX_API_URL}/api${url}`;
-    return (token) => {
-        const headers = {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...options.headers,
-            ...getAuthentication(token),
-        };
-        return fetch(fullUrl, { headers, method, body });
+  const method = options.method || 'GET';
+  const body = JSON.stringify(options.body) || undefined;
+  const fullUrl = `${getApiURL()}/api${url}`;
+  return (token) => {
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...options.headers,
+      ...getAuthentication(token),
     };
+    return fetch(fullUrl, { headers, method, body });
+  };
 }
