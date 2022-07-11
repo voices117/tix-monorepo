@@ -33,6 +33,7 @@ def get_digital_sign(data:bytes, keys:str) -> bytes:
 
 def get_public_key(keys:str) -> bytes:
     with NamedTemporaryFile() as pub:
+        # serialize public key in PKCS1 DER format
         system(f'openssl rsa -pubout -outform DER -in {keys} -out {pub.name}')
         return pub.read()
 
