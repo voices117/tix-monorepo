@@ -1,8 +1,9 @@
 import time
-import random
 import socket
 
+from os import system
 from base64 import b64encode
+from tempfile import NamedTemporaryFile
 
 
 ADDRESS = ('localhost', 4500)
@@ -12,16 +13,37 @@ TRIGGER_ADDRESS = ('localhost', 7561)
 sock_trigger_service = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
+# gen keys
+def genkeys() -> NamedTemporaryFile:
+    keys = 'keys.pem'
+    system(f'openssl genrsa -out {keys} 2048')
+    print('Storing keys in', keys)
+    return keys
+
+
+def get_digital_sign(data:bytes, keys:str) -> bytes:
+    with NamedTemporaryFile() as sign_file, NamedTemporaryFile() as data_file:
+        data_file.write(data)
+
+        system(f'openssl dgst -sha256 -sign {keys} -out {sign_file.name} {data_file.name}')
+        signature = sign_file.read()
+
+    return signature
+
+
+def get_public_key(keys:str) -> bytes:
+    with NamedTemporaryFile() as pub:
+        system(f'openssl rsa -pubout -outform DER -in {keys} -out {pub.name}')
+        return pub.read()
+
 
 def get_timestamp() -> bytes:
     return time.time_ns().to_bytes(length=8, byteorder='big')
 
 
-def build_data_packet(packets:list) -> bytes:
+def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
     user_id = b'testuser'
     installation_id = b'installa'
-    public_key = b'\x00' * 294
-    public_key = b'\x00' * 294
 
     data = b''
     for p in packets:
@@ -32,16 +54,23 @@ def build_data_packet(packets:list) -> bytes:
 
     data = b64encode(data)
 
-    signature = b'\x00' * 256
-    
+    signature = get_digital_sign(data=data, keys=keys_file)
+    assert len(signature) == 256
+
+    assert len(public_key) == 294
+
     return (
         b'\x00' * 32 +  # timestamps
-        b'DATA' +
+        b'DATA' + b';;' +
         user_id + installation_id + b';;' +
         public_key + b';;' +
         data + b';;' +
-        signature
+        signature + b';;'
     )
+
+
+KEYS_FILE_NAME = genkeys()
+PUBLIC_KEY = get_public_key(KEYS_FILE_NAME)
 
 
 while True:
@@ -73,6 +102,6 @@ while True:
         packets.append(packet)
 
     # send long packet
-    sock.sendto(build_data_packet(packets), ADDRESS)
+    sock.sendto(build_data_packet(packets, KEYS_FILE_NAME, PUBLIC_KEY), ADDRESS)
     print('response to large packet: %r' % sock.recv(32))
     
