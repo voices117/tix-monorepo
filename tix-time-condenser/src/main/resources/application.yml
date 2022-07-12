@@ -1,0 +1,61 @@
+tix-condenser:
+  tix-api:
+    https: false
+    host: localhost
+    port: 3001
+    user: admin
+    password: admin
+  queues:
+    receiving:
+      name: server-condenser-test
+  reports:
+    path: /tmp/reports
+---
+spring:
+  profiles: test
+tix-condenser:
+  tix-api:
+    https: false
+    host: localhost
+    port: 8081
+  queues:
+    receiving:
+      name: server-condenser-test
+  reports:
+    path: /tmp/reports
+server:
+  port: 0
+---
+spring:
+  profiles: ci-test
+tix-condenser:
+  tix-api:
+    https: false
+    host: localhost
+    port: 3000
+  queues:
+    receiving:
+      name: server-condenser-test
+  reports:
+    path: /tmp/reports
+---
+spring:
+  profiles: staging
+tix-condenser:
+  tix-api:
+    user:
+    password:
+  queues:
+    receiving:
+      name: server-condenser-staging
+---
+spring:
+  profiles: production
+tix-condenser:
+  tix-api:
+    user:
+    password:
+  queues:
+    receiving:
+      name: server-condenser-prod
+---
