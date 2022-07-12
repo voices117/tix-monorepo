@@ -17,9 +17,13 @@ volumes:
 services:
   tix-time-server:
     image: tixmeasurements/tix-time-server:latest
+    # build:
+    #   context: tix-time-server
     environment:
       <<: *common-variables
       TIX__QUEUE__HOST: rabbitmq
+      TIX__LOG_LEVEL: ALL
+      TIX__LOG-LEVEL: ALL
     ports:
       - "4500:4500/udp"
       - "8080:8080/tcp"
@@ -50,6 +54,13 @@ services:
     depends_on:
       - rabbitmq
 
+  tix-time-condenser:
+    #image: tixmeasurements/tix-time-condenser:latest
+    build:
+      context: tix-time-condenser
+    volumes:
+      - ReportsVolume:/tmp/reports
+
   tix-api:
     # image: tixmeasurements/tix-api:latest
     # command: ["npm", "run", "start"]
@@ -74,9 +85,11 @@ services:
       - 3000:3000
   
   rabbitmq:
-    image: rabbitmq:3
+    image: rabbitmq:3-management
     environment:
       <<: *common-variables
+    ports:
+      - "15672:15672"
 
   mysql:
     image: mysql:5.7.28

@@ -8,17 +8,23 @@ RUN apt-get update -y \
 	&& apt-get install -y \
 			software-properties-common \
 			curl
+RUN apt-get install -y wget
 
-# Installing and setting up software and properties specific to the Java Language
-RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-RUN add-apt-repository ppa:webupd8team/java \
-	&& apt-get update \
-	&& apt-get install -y oracle-java8-installer \
-	&& apt-get install -y oracle-java8-set-default
+# install Java
+WORKDIR /usr/local/
+COPY jdk-8u202-linux-x64.tar.gz .
+
+RUN tar zxvf jdk-8u202-linux-x64.tar.gz
+RUN update-alternatives --install /usr/bin/java java /usr/local/jdk1.8.0_202/bin/java 100
+
+COPY . .
+RUN ./gradlew bootRepackage
+RUN rm jdk-8u202-linux-x64.tar.gz
 
 RUN mkdir -p /root/tix-time-condenser
-COPY tix-time-condenser.jar /root/tix-time-condenser
-COPY run.sh /root/tix-time-condenser
-WORKDIR /root/tix-time-condenser
+RUN mv build/libs/tix-time-condenser-*.jar /root/tix-time-condenser.jar
+#COPY tix-time-condenser.jar /root/tix-time-condenser
+RUN mv run.sh /root/
+WORKDIR /root/
 
 ENTRYPOINT ["./run.sh"]

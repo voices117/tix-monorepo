@@ -24,8 +24,9 @@ def genkeys() -> NamedTemporaryFile:
 def get_digital_sign(data:bytes, keys:str) -> bytes:
     with NamedTemporaryFile() as sign_file, NamedTemporaryFile() as data_file:
         data_file.write(data)
+        data_file.seek(0)
 
-        system(f'openssl dgst -sha256 -sign {keys} -out {sign_file.name} {data_file.name}')
+        system(f'openssl dgst -sha1 -sign {keys} -out {sign_file.name} {data_file.name}')
         signature = sign_file.read()
 
     return signature
@@ -53,19 +54,17 @@ def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
         data += b'S' + (32).to_bytes(length=4, byteorder='little')
         data += p
 
-    data = b64encode(data)
-
     signature = get_digital_sign(data=data, keys=keys_file)
     assert len(signature) == 256
 
     assert len(public_key) == 294
 
     return (
-        b'\x00' * 32 +  # timestamps
+        get_timestamp() + b'\x00' * 24 +
         b'DATA' + b';;' +
         user_id + installation_id + b';;' +
         public_key + b';;' +
-        data + b';;' +
+        b64encode(data) + b';;' +
         signature + b';;'
     )
 
