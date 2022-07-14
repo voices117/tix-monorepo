@@ -1,5 +1,7 @@
 import time
 import socket
+import requests
+from requests.auth import HTTPBasicAuth
 
 from os import system
 from base64 import b64encode
@@ -11,6 +13,12 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 TRIGGER_ADDRESS = ('localhost', 7561)
 sock_trigger_service = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+USER = 'guest'
+# user_id is the numeric value assigned to the user in the DB. In this
+# case I'm hardcoding it to 1, which is the Id of the admin user (guest)
+USER_ID = 1
+PASSSWORD = 'guest'
 
 
 # gen keys
@@ -44,14 +52,14 @@ def get_timestamp() -> bytes:
 
 
 def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
-    user_id = b'testuser'
-    installation_id = b'installa'
+    user_id = (USER_ID).to_bytes(length=8, byteorder='big')
+    installation_id = (INSTALLATION).to_bytes(length=8, byteorder='big')
 
     data = b''
     for p in packets:
-        unix_time_seconds = (time.time_ns() // 1_000_000).to_bytes(length=8, byteorder='little')
+        unix_time_seconds = (time.time_ns() // 1_000_000_000).to_bytes(length=8, byteorder='big')
         data += unix_time_seconds
-        data += b'S' + (32).to_bytes(length=4, byteorder='little')
+        data += b'S' + (32).to_bytes(length=4, byteorder='big')
         data += p
 
     signature = get_digital_sign(data=data, keys=keys_file)
@@ -60,7 +68,7 @@ def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
     assert len(public_key) == 294
 
     return (
-        get_timestamp() + b'\x00' * 24 +
+        packets[0] +
         b'DATA' + b';;' +
         user_id + installation_id + b';;' +
         public_key + b';;' +
@@ -71,6 +79,16 @@ def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
 
 KEYS_FILE_NAME = genkeys()
 PUBLIC_KEY = get_public_key(KEYS_FILE_NAME)
+
+
+# create installation
+auth = HTTPBasicAuth(username=USER, password=PASSSWORD)
+data = {'name': 'test_location', 'publickey': b64encode(PUBLIC_KEY).decode('ascii')}
+r = requests.post(f'http://localhost:3001/api/user/{USER_ID}/installation', json=data, auth=auth)
+assert r.ok, (r.status_code, r.text)
+
+INSTALLATION = int(r.json()['id'])
+print('Installation:', r.text)
 
 
 while True:
