@@ -60,16 +60,29 @@ services:
       context: tix-time-condenser
     volumes:
       - ReportsVolume:/tmp/reports
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: guest 
+      SPRING_RABBITMQ_PASSWORD: guest
+      #TIX_CONDENSER_TIX_API_HTTPS=True
+      #TIX_CONDENSER_TIX_API_HOST=tix.innova-red.net
+      TIX_CONDENSER_TIX_API_HOST: tix-api
+      #TIX_CONDENSER_TIX_API_PORT=443
+      TIX_CONDENSER_TIX_API_USER: guest
+      TIX_CONDENSER_TIX_API_PASSWORD: guest
 
   tix-api:
     # image: tixmeasurements/tix-api:latest
     # command: ["npm", "run", "start"]
+    command: sh -c "./wait-for-it.sh --host=mysql --port=3306 --timeout=30 -- npm start"
     build:
       context: tix-api
     ports:
       - "3001:3001/tcp"
     depends_on:
       - mysql
+    environment:
+      <<: *common-variables
 
   tix-iptoas:
     image: tixmeasurements/iptoas:latest
