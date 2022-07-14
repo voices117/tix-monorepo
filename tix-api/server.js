@@ -20,6 +20,7 @@ var contracts = require('./contracts');
 var R = require('ramda');
 var PythonShell = require('python-shell');
 var moment = require('moment');
+var db = require('./models/db');
 
 
 app.use(bodyParser.json());
@@ -340,6 +341,25 @@ app.get('/api/admin/reports.csv', function(req, res) {
 });
 
 
-app.listen(3001, function() {
-    console.log('TiX api app listening on port 3001!')
-});
+if (process.env.NODE_ENV != 'test') {
+    db.migrate().then(() => {
+        const admin_user = process.env.TIX_API_USER;
+        const admin_pass = process.env.TIX_API_PASSWORD;
+
+        userService.createAdmin(admin_user, admin_pass).then((user) => {
+            console.log(`Created admin user: ${process.env.TIX_API_USER}`)
+        }, (error) => {
+            console.log(`Failed creating admin user: ${error}`)
+        });
+
+        app.listen(3001, function() {
+            console.log('TiX api app listening on port 3001!')
+        });
+    }, (error) => {
+        console.log(`Failed migrations: ${error}`)
+    });
+} else {
+    app.listen(3001, function() {
+        console.log('TiX api app listening on port 3001!')
+    });
+}

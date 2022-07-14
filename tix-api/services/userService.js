@@ -35,6 +35,18 @@ var createUser = (username, password) => {
     }).save();
 }
 
+var createAdmin = (username, password) => {
+    var salt = generateSalt();
+    var hashedPassword = hashPassword(password, salt);
+    return User.forge({
+        username: username,
+        password: hashedPassword,
+        role: 'admin',
+        salt: salt,
+        enabled: true
+    }).save();
+}
+
 var getUserById = (userId) => {
     return User.where('id', userId).fetch();
 };
@@ -107,6 +119,7 @@ module.exports = {
     getAllUsers: getAllUsers,
     getUserById: getUserById,
     createUser: createUser,
+    createAdmin: createAdmin,
     updateUser: updateUser,
     hashPassword: hashPassword,
     generateSalt: generateSalt,

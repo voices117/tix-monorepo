@@ -1,5 +1,5 @@
-var db  = require('./db');
-var Bookshelf = require('bookshelf')(db);
+var db = require('./db');
+var Bookshelf = require('bookshelf')(db.knex);
 var Provider = require('./Provider');
 var Measure = require('./Measure');
 Bookshelf.plugin('registry');

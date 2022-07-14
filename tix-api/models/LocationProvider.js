@@ -1,5 +1,5 @@
-var db  = require('./db');
-var Bookshelf = require('bookshelf')(db);
+var db = require('./db');
+var Bookshelf = require('bookshelf')(db.knex);
 Bookshelf.plugin('registry');
 
 module.exports = Bookshelf.Model.extend({
