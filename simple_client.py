@@ -1,9 +1,10 @@
 import time
 import socket
+from typing import List, Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 
-from os import system
+from os import system, path
 from base64 import b64encode
 from tempfile import NamedTemporaryFile
 
@@ -22,10 +23,13 @@ PASSSWORD = 'guest'
 
 
 # gen keys
-def genkeys() -> NamedTemporaryFile:
+def genkeys() -> str:
     keys = 'keys.pem'
-    system(f'openssl genrsa -out {keys} 2048')
-    print('Storing keys in', keys)
+
+    if not path.exists(keys):
+        system(f'openssl genrsa -out {keys} 2048')
+        print('Storing keys in', keys)
+
     return keys
 
 
@@ -51,13 +55,18 @@ def get_timestamp() -> bytes:
     return time.time_ns().to_bytes(length=8, byteorder='big')
 
 
-def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
+def get_unix_timestamp() -> bytes:
+    # return the seconds elapsed since epoch encoded as an 8 byte array
+    unix_time_seconds = (time.time_ns() // 1_000_000_000)
+    return unix_time_seconds.to_bytes(length=8, byteorder='big')
+
+
+def build_data_packet(packets:List[Tuple[bytes, bytes]], keys_file:str, public_key:bytes) -> bytes:
     user_id = (USER_ID).to_bytes(length=8, byteorder='big')
-    installation_id = (INSTALLATION).to_bytes(length=8, byteorder='big')
+    installation_id = (INSTALLATION_ID).to_bytes(length=8, byteorder='big')
 
     data = b''
-    for p in packets:
-        unix_time_seconds = (time.time_ns() // 1_000_000_000).to_bytes(length=8, byteorder='big')
+    for p, unix_time_seconds in packets:
         data += unix_time_seconds
         data += b'S' + (32).to_bytes(length=4, byteorder='big')
         data += p
@@ -68,7 +77,10 @@ def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
     assert len(public_key) == 294
 
     return (
-        packets[0] +
+        # the "large packet" can also be used as a ping packet
+        # for this example we only want to send the data, so we hardcode
+        # the last message's timestamps instead of doing a roundtrip
+        packets[-1][0] +
         b'DATA' + b';;' +
         user_id + installation_id + b';;' +
         public_key + b';;' +
@@ -77,18 +89,23 @@ def build_data_packet(packets:list, keys_file:str, public_key:bytes) -> bytes:
     )
 
 
+def create_installation():
+    print('Creating new installation...')
+    auth = HTTPBasicAuth(username=USER, password=PASSSWORD)
+    data = {'name': 'test_location', 'publickey': b64encode(PUBLIC_KEY).decode('ascii')}
+    r = requests.post(f'http://localhost:3001/api/user/{USER_ID}/installation', json=data, auth=auth)
+    assert r.ok, (r.status_code, r.text)
+    return r.json()
+
+
+def get_installation_id():
+    return create_installation()['id']
+
+
 KEYS_FILE_NAME = genkeys()
 PUBLIC_KEY = get_public_key(KEYS_FILE_NAME)
-
-
-# create installation
-auth = HTTPBasicAuth(username=USER, password=PASSSWORD)
-data = {'name': 'test_location', 'publickey': b64encode(PUBLIC_KEY).decode('ascii')}
-r = requests.post(f'http://localhost:3001/api/user/{USER_ID}/installation', json=data, auth=auth)
-assert r.ok, (r.status_code, r.text)
-
-INSTALLATION = int(r.json()['id'])
-print('Installation:', r.text)
+INSTALLATION_ID = get_installation_id()
+print('Installation ID:', INSTALLATION_ID)
 
 
 while True:
@@ -117,7 +134,7 @@ while True:
         packet = packet[0:24] + get_timestamp()
         print('final packet: %r' % packet)
 
-        packets.append(packet)
+        packets.append((packet, get_unix_timestamp()))
 
     # send long packet
     sock.sendto(build_data_packet(packets, KEYS_FILE_NAME, PUBLIC_KEY), ADDRESS)
