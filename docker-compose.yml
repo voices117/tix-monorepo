@@ -3,9 +3,12 @@ version: "3.7"
 x-common-variables: &common-variables
   RABBITMQ_DEFAULT_USER: guest
   RABBITMQ_DEFAULT_PASS: guest
-  TIX_API_HOST: tix-api
-  TIX_API_USER: guest
-  TIX_API_PASSWORD: guest
+
+  # these variables need to be defined in an .env file
+  TIX_API_HOST: $TIX_API_HOST
+  TIX_API_PORT: $TIX_API_PORT
+  TIX_API_USER: $TIX_API_ADMIN_USERNAME
+  TIX_API_PASSWORD: $TIX_API_ADMIN_PASSWORD
 
 volumes:
   ReportsVolume:
@@ -38,38 +41,50 @@ services:
     ports:
       - "7561:7561/udp"
 
-  tix-time-processor:
-    # TODO: validate the "-worker" suffix (https://github.com/TiX-measurements/tix-time-processor)
-    image: tixmeasurements/tix-time-processor:latest
-    environment:
-      <<: *common-variables
-      TIX_REPORTS_BASE_PATH: /reports
-      TIX_RABBITMQ_USER: guest
-      TIX_RABBITMQ_PASS: guest
-      TIX_RABBITMQ_HOST: rabbitmq
-      PROCESSOR_TYPE: STANDALONE
-    volumes:
-      - ReportsVolume:/reports
-      - SchedulerVolume:/tmp/celerybeat-schedule.d  # default location can be changed using CELERY_BEAT_SCHEDULE_DIR
-    depends_on:
-      - rabbitmq
-
   tix-time-condenser:
-    #image: tixmeasurements/tix-time-condenser:latest
-    build:
-      context: tix-time-condenser
+    image: tixmeasurements/tix-time-condenser:latest
+    # build:
+    #   context: tix-time-condenser
     volumes:
       - ReportsVolume:/tmp/reports
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_USERNAME: guest 
       SPRING_RABBITMQ_PASSWORD: guest
-      #TIX_CONDENSER_TIX_API_HTTPS=True
-      #TIX_CONDENSER_TIX_API_HOST=tix.innova-red.net
-      TIX_CONDENSER_TIX_API_HOST: tix-api
-      #TIX_CONDENSER_TIX_API_PORT=443
-      TIX_CONDENSER_TIX_API_USER: guest
-      TIX_CONDENSER_TIX_API_PASSWORD: guest
+      TIX_CONDENSER_TIX_API_HTTPS: $TIX_API_HTTPS
+      TIX_CONDENSER_TIX_API_HOST: $TIX_API_HOST
+      TIX_CONDENSER_TIX_API_PORT: $TIX_API_PORT
+      TIX_CONDENSER_TIX_API_USER: $TIX_API_ADMIN_USERNAME
+      TIX_CONDENSER_TIX_API_PASSWORD: $TIX_API_ADMIN_PASSWORD
+
+  tix-time-processor-beat:
+    image: "tixmeasurements/tix-time-processor:latest"
+    environment:
+      <<: *common-variables
+      PROCESSOR_TYPE: BEAT
+      TIX_REPORTS_BASE_PATH: /reports
+      TIX_RABBITMQ_USER: guest
+      TIX_RABBITMQ_PASS: guest
+      TIX_RABBITMQ_HOST: rabbitmq
+    volumes:
+      - SchedulerVolume:/tmp/celerybeat-schedule.d
+    depends_on:
+      - rabbitmq
+
+  tix-time-processor-worker:
+    image: "tixmeasurements/tix-time-processor:latest"
+    environment:
+      <<: *common-variables
+      PROCESSOR_TYPE: WORKER
+      TIX_REPORTS_BASE_PATH: /reports
+      TIX_RABBITMQ_USER: guest
+      TIX_RABBITMQ_PASS: guest
+      TIX_RABBITMQ_HOST: rabbitmq
+    volumes:
+      - ReportsVolume:/reports
+      - SchedulerVolume:/tmp/celerybeat-schedule.d
+    depends_on:
+      - rabbitmq
 
   tix-api:
     # image: tixmeasurements/tix-api:latest
